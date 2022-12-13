@@ -46,7 +46,7 @@ class NormLocalAttention(nn.Module):
         # reshape
         q, k, v = map(lambda x: rearrange(x, '... n (h d) -> ... h n d', h=self.num_heads), [q, k, v])
         # normalize
-        q, k = F.normalize(q), F.normalize(k)
+        # q, k = F.normalize(q), F.normalize(k)
         energy = torch.einsum('... n d, ... m d -> ... n m', q, k)
         if self.causal:
             if (attn_mask == None):

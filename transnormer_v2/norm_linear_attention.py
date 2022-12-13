@@ -47,7 +47,7 @@ class NormLinearAttention(nn.Module):
         q = self.act(q)
         k = self.act(k)
         # normalize
-        q, k = F.normalize(q), F.normalize(k)
+        # q, k = F.normalize(q), F.normalize(k)
 
         if self.causal:
             if (attn_mask == None):
