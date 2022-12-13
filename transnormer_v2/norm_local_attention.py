@@ -24,7 +24,8 @@ class NormLocalAttention(nn.Module):
         self.out_proj = nn.Linear(embed_dim, embed_dim)
         self.act = get_activation_fn(act_fun)
         self.num_heads = num_heads
-        self.norm = get_norm_fn(norm_type)(embed_dim // self.num_heads)
+        # self.norm = get_norm_fn(norm_type)(embed_dim // self.num_heads)
+        self.norm = get_norm_fn(norm_type)(embed_dim)
         self.causal = causal
         self.use_softmax = use_softmax
         
@@ -67,9 +68,11 @@ class NormLocalAttention(nn.Module):
             
         output = torch.einsum('... n m, ... m d -> ... n d', energy, v)
         # normalize
-        output = self.norm(output)
+        # output = self.norm(output)
         # reshape
         output = rearrange(output, '... h n d -> ... n (h d)')
+        # normalize
+        output = self.norm(output)
         # gate
         output = u * output
         # outproj
