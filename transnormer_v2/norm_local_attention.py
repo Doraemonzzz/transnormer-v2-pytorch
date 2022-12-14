@@ -12,6 +12,7 @@ class NormLocalAttention(nn.Module):
         embed_dim,
         num_heads,
         act_fun="relu",
+        uv_act_fun="swish",
         norm_type="layernorm",
         causal=False,
         use_softmax=True,
@@ -23,6 +24,7 @@ class NormLocalAttention(nn.Module):
         self.u_proj = nn.Linear(embed_dim, embed_dim)
         self.out_proj = nn.Linear(embed_dim, embed_dim)
         self.act = get_activation_fn(act_fun)
+        self.uv_act = get_activation_fn(uv_act_fun)
         self.num_heads = num_heads
         # self.norm = get_norm_fn(norm_type)(embed_dim // self.num_heads)
         self.norm = get_norm_fn(norm_type)(embed_dim)
@@ -44,6 +46,9 @@ class NormLocalAttention(nn.Module):
         u = self.u_proj(x)
         k = self.k_proj(y)
         v = self.v_proj(y)
+        # uv act
+        u = self.uv_act(u)
+        v = self.uv_act(v)
         # reshape
         q, k, v = map(lambda x: rearrange(x, '... n (h d) -> ... h n d', h=self.num_heads), [q, k, v])
         # normalize
