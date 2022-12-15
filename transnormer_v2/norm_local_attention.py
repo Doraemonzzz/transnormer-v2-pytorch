@@ -64,13 +64,12 @@ class NormLocalAttention(nn.Module):
                 attn_mask = attn_mask.unsqueeze(0)
             if self.use_softmax:
                 energy = energy.masked_fill(attn_mask==0, float('-inf'))
-            else:
-                energy = energy.masked_fill(attn_mask==0, 0)
         if self.use_softmax:
             energy = F.softmax(energy, dim=-1)
         else:
             energy = self.act(energy)
-            
+            if self.causal and (not self.use_softmax):
+                energy = energy.masked_fill(attn_mask==0, 0)
         output = torch.einsum('... n m, ... m d -> ... n d', energy, v)
         # normalize
         # output = self.norm(output)
