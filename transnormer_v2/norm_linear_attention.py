@@ -54,7 +54,6 @@ class NormLinearAttention(nn.Module):
         k = self.act(k)
         # normalize
         # q, k = F.normalize(q), F.normalize(k)
-
         if self.causal:
             if (attn_mask == None):
                 attn_mask = (torch.tril(torch.ones(n, n))).to(q)

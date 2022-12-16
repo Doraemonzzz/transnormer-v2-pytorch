@@ -53,7 +53,7 @@ class NormLocalAttention(nn.Module):
         q, k, v = map(lambda x: rearrange(x, '... n (h d) -> ... h n d', h=self.num_heads), [q, k, v])
         # normalize
         # q, k = F.normalize(q), F.normalize(k)
-        energy = torch.einsum('... n d, ... m d -> ... n m', q, k)
+        energy = torch.einsum('... n d, ... m d -> ... n m', q, k) / self.num_heads
         if self.causal:
             if (attn_mask == None):
                 attn_mask = (torch.tril(torch.ones(n, n))).to(q)
@@ -63,13 +63,15 @@ class NormLocalAttention(nn.Module):
             for _ in range(l1 - l2):
                 attn_mask = attn_mask.unsqueeze(0)
             if self.use_softmax:
-                energy = energy.masked_fill(attn_mask==0, float('-inf'))
+                energy += attn_mask
+                # energy = energy.masked_fill(attn_mask==0, float('-inf'))
         if self.use_softmax:
             energy = F.softmax(energy, dim=-1)
         else:
             energy = self.act(energy)
             if self.causal and (not self.use_softmax):
-                energy = energy.masked_fill(attn_mask==0, 0)
+                # energy = energy.masked_fill(attn_mask==0, 0)
+                energy *= torch.exp(attn_mask)
         output = torch.einsum('... n m, ... m d -> ... n d', energy, v)
         # normalize
         # output = self.norm(output)
