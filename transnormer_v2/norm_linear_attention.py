@@ -18,9 +18,9 @@ class NormLinearAttention(nn.Module):
         causal=False,
     ):
         super().__init__()
-        self.q_proj = nn.Linear(embed_dim, hidden_dim)
-        self.k_proj = nn.Linear(embed_dim, hidden_dim)
-        # self.qk_proj = nn.Linear(embed_dim, hidden_dim)
+        # self.q_proj = nn.Linear(embed_dim, hidden_dim)
+        # self.k_proj = nn.Linear(embed_dim, hidden_dim)
+        self.qk_proj = nn.Linear(embed_dim, hidden_dim)
         self.v_proj = nn.Linear(embed_dim, hidden_dim)
         self.u_proj = nn.Linear(embed_dim, hidden_dim)
         self.out_proj = nn.Linear(hidden_dim, embed_dim)
@@ -42,11 +42,11 @@ class NormLinearAttention(nn.Module):
             y = x
         n = x.shape[-2]
         # linear map
-        q = self.q_proj(x)
-        # q = self.qk_proj(x)
+        # q = self.q_proj(x)
+        q = self.qk_proj(x)
         u = self.u_proj(x)
-        k = self.k_proj(y)
-        # k = self.qk_proj(y)
+        # k = self.k_proj(y)
+        k = self.qk_proj(y)
         v = self.v_proj(y)
         # uv act
         u = self.uv_act(u)
