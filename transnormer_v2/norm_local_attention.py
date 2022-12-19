@@ -18,7 +18,6 @@ class NormLocalAttention(nn.Module):
         norm_type="layernorm",
         causal=False,
         use_softmax=True,
-        energy_scale=10.0,
     ):
         super().__init__()
         self.q_proj = nn.Linear(embed_dim, hidden_dim)
@@ -30,11 +29,9 @@ class NormLocalAttention(nn.Module):
         self.uv_act = get_activation_fn(uv_act_fun)
         self.num_heads = num_heads
         self.head_dim = hidden_dim // self.num_heads
-        # self.norm = get_norm_fn(norm_type)(embed_dim // self.num_heads)
         self.norm = get_norm_fn(norm_type)(hidden_dim)
         self.causal = causal
         self.use_softmax = use_softmax
-        self.energy_scale = energy_scale
         
     def forward(
         self,
@@ -56,31 +53,24 @@ class NormLocalAttention(nn.Module):
         v = self.uv_act(v)
         # reshape
         q, k, v = map(lambda x: rearrange(x, '... n (h d) -> ... h n d', h=self.num_heads), [q, k, v])
-        # normalize
-        q, k = F.normalize(q), F.normalize(k)
-        # energy = torch.einsum('... n d, ... m d -> ... n m', q, k) / np.sqrt(self.head_dim)
-        energy = torch.einsum('... n d, ... m d -> ... n m', q, k) * self.energy_scale
+        energy = torch.einsum('... n d, ... m d -> ... n m', q, k) / np.sqrt(self.head_dim)
+        
         if self.causal:
             if (attn_mask == None):
                 attn_mask = (torch.tril(torch.ones(n, n))).to(q)
-            # attn_mask = attn_mask.masked_fill(attn_mask==0, float('-inf'))
             l1 = len(q.shape)
             l2 = len(attn_mask.shape)
             for _ in range(l1 - l2):
                 attn_mask = attn_mask.unsqueeze(0)
             if self.use_softmax:
                 energy += attn_mask
-                # energy = energy.masked_fill(attn_mask==0, float('-inf'))
         if self.use_softmax:
             energy = F.softmax(energy, dim=-1)
         else:
             energy = self.act(energy)
             if self.causal and (not self.use_softmax):
-                # energy = energy.masked_fill(attn_mask==0, 0)
                 energy *= torch.exp(attn_mask)
         output = torch.einsum('... n m, ... m d -> ... n d', energy, v)
-        # normalize
-        # output = self.norm(output)
         # reshape
         output = rearrange(output, '... h n d -> ... n (h d)')
         # normalize
