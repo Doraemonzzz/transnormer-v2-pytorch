@@ -29,9 +29,10 @@ class NormLocalAttention(nn.Module):
         self.uv_act = get_activation_fn(uv_act_fun)
         self.num_heads = num_heads
         self.head_dim = hidden_dim // self.num_heads
-        self.norm = get_norm_fn(norm_type)(hidden_dim)
         self.causal = causal
         self.use_softmax = use_softmax
+        if not self.use_softmax:
+            self.norm = get_norm_fn(norm_type)(hidden_dim)
         
     def forward(
         self,
