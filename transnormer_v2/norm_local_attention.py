@@ -73,8 +73,9 @@ class NormLocalAttention(nn.Module):
         output = torch.einsum('... n m, ... m d -> ... n d', energy, v)
         # reshape
         output = rearrange(output, '... h n d -> ... n (h d)')
-        # normalize
-        output = self.norm(output)
+        if not self.use_softmax:
+            # normalize
+            output = self.norm(output)
         # gate
         output = u * output
         # outproj
