@@ -5,7 +5,7 @@ import numpy as np
 from einops import rearrange
 
 from .helpers import get_activation_fn, get_norm_fn
-
+from .rpe import Lrpe
 
 class NormLocalAttention(nn.Module):
     def __init__(
@@ -18,6 +18,7 @@ class NormLocalAttention(nn.Module):
         norm_type="layernorm",
         causal=False,
         use_softmax=True,
+        use_lrpe=False,
     ):
         super().__init__()
         self.q_proj = nn.Linear(embed_dim, hidden_dim)
@@ -33,6 +34,9 @@ class NormLocalAttention(nn.Module):
         self.use_softmax = use_softmax
         if not self.use_softmax:
             self.norm = get_norm_fn(norm_type)(hidden_dim)
+        self.use_lrpe = use_lrpe
+        if self.use_lrpe:
+            self.lrpe = Lrpe(self.head_dim)
         
     def forward(
         self,
@@ -54,6 +58,10 @@ class NormLocalAttention(nn.Module):
         v = self.uv_act(v)
         # reshape
         q, k, v = map(lambda x: rearrange(x, '... n (h d) -> ... h n d', h=self.num_heads), [q, k, v])
+        # rpe
+        if self.use_lrpe:
+            q = self.lrpe(q)
+            k = self.lrpe(k)
         energy = torch.einsum('... n d, ... m d -> ... n m', q, k) / np.sqrt(self.head_dim)
         
         if self.causal:
