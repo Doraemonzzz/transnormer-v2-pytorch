@@ -5,7 +5,7 @@ import numpy as np
 from einops import rearrange
 
 from .helpers import get_activation_fn, get_norm_fn
-from .rpe import Lrpe
+from .rpe import Lrpe, LrpeV2
 
 class NormLocalAttention(nn.Module):
     def __init__(
@@ -19,6 +19,7 @@ class NormLocalAttention(nn.Module):
         causal=False,
         use_softmax=True,
         use_lrpe=False,
+        lrpe_version=1,
     ):
         super().__init__()
         self.q_proj = nn.Linear(embed_dim, hidden_dim)
@@ -36,7 +37,10 @@ class NormLocalAttention(nn.Module):
             self.norm = get_norm_fn(norm_type)(hidden_dim)
         self.use_lrpe = use_lrpe
         if self.use_lrpe:
-            self.lrpe = Lrpe(self.head_dim)
+            if lrpe_version == 1:
+                self.lrpe = Lrpe(self.head_dim)
+            else:
+                self.lrpe = LrpeV2(self.num_heads, self.head_dim)
         
     def forward(
         self,

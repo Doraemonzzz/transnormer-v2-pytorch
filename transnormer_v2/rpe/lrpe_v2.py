@@ -8,9 +8,10 @@ import torch.functional as F
 import torch.nn as nn
 from ..helpers import print_params, logging_info
 
-class Lrpe(nn.Module):
+class LrpeV2(nn.Module):
     def __init__(
         self,
+        number_head=8,
         embedding_dim=64,
     ):
         super().__init__()
@@ -19,13 +20,15 @@ class Lrpe(nn.Module):
         # print params
         print_params(**params)
         # mix transform
+        d = number_head * embedding_dim
+        # (h, 1, e // 2)
         self.theta = nn.Parameter(
             10000
-            ** (-2 / embedding_dim * torch.arange(embedding_dim // 2 // 2)).reshape(
-                1, 1, -1
+            ** (-2 / d * torch.arange(d // 2 // 2)).reshape(
+                number_head, 1, -1
             )
         )
-        self.v = nn.Parameter(torch.randn(embedding_dim))
+        self.v = nn.Parameter(torch.randn(number_head, 1, embedding_dim))
         self.p = self.householder
         self.core_transform = self.mix_rope
 
