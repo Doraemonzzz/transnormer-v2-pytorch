@@ -28,7 +28,7 @@ class LrpeV2(nn.Module):
                 number_head, 1, -1
             )
         )
-        self.v = nn.Parameter(torch.randn(number_head, 1, embedding_dim))
+        self.v = nn.Parameter(torch.randn(number_head, embedding_dim))
         self.p = self.householder
         self.core_transform = self.mix_rope
 
@@ -76,11 +76,9 @@ class LrpeV2(nn.Module):
     def householder(self, x, eps=1e-6):
         v = self.v / (torch.norm(self.v) + eps)
         # 调整为相同形状
-        for i in range(len(x.shape) - 1):
-            v = v.unsqueeze(0)
-        # b, n, e; 1, 1, e -> 1, n, 1
-        y = torch.einsum("...ne,...le->...nl", x, v)
-        # 1, n, 1; 1, 1, e -> 1, n, e
-        y = torch.einsum("...nl,...le->...ne", y, v)
+        # ..., h, n, e; h, e -> ..., h, n
+        y = torch.einsum("...hne,he->...hn", x, v)
+        # ..., h, n; h, e -> ..., h, n, e
+        y = torch.einsum("...hn,...he->...hne", y, v)
 
         return x - 2 * y
