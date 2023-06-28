@@ -71,7 +71,7 @@ class Lrpe(nn.Module):
         return x_transform
 
     def householder(self, x, eps=1e-6):
-        v = self.v / (torch.norm(self.v) + eps)
+        v = self.v / (torch.norm(self.v, dim=-1, keepdim=True) + eps)
         # 调整为相同形状
         for i in range(len(x.shape) - 1):
             v = v.unsqueeze(0)
